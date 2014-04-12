@@ -6,6 +6,8 @@ TwitterGraph
 TwitterGraph is a Twitter data visualiziation built with Processing. It simple approach is to visualize geolocalized
 data from the TwitterAPI. The result is a imaginary map with points, circles and lines.
 
+![TwitterGraph](https://incom.org/action/open-image/118434/big/118434.png)
+
 For more information see:<br>
 https://vimeo.com/59059352<br>
 https://incom.org/projekt/2926
@@ -22,8 +24,8 @@ Have fun watching and exploring your TwitterGraph.
 
 ## Contribute
 
-Feel free to contribute in any kind. Unfortunately there is no guide showing at least the main features and how to test the sketch. But if you feel confident enough, don't hasitate to take a look in the code or make your pull request.
+Feel free to contribute in any kind. Unfortunately there is no guide showing at least the main features. But if you feel confident enough, don't hasitate to take a look in the code or make your pull request.
 
 ## Future plans
 
-There is no real documentation or "How to use it?" guide yet. I plan to build a Github page for it and decouple some components I find to be useful when working with the TwitterAPI and Processing. I also would like to build some more features like searching for hashtags.
+There is no documentation or real "How to use it?" guide yet. I plan to build a Github page for it and decouple some components I find to be useful when working with the TwitterAPI and Processing. I also would like to build some more features like searching for hashtags.
