@@ -23,7 +23,7 @@ public final class Line extends SkyObject {
         this.reply = reply;
         this.status = status;
 
-        this.info = Point.buildInfo(status) + " � " + Point.buildInfo(reply);
+        this.info = Point.buildInfo(status) + " — " + Point.buildInfo(reply);
     }
 
     @Override
