@@ -18,8 +18,6 @@ public final class SkyCache extends Thread {
         try {
             fileInputStream = new FileInputStream(this.file);
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
-
             File parent = new File(this.file.getParent());
 
             if (!parent.exists()) {
