@@ -53,9 +53,6 @@ public final class Circle extends SkyObject {
         GeoLocation bottomRight = boundingBox[0][2];
         float x1, x2, y1, y2, a, b;
 
-        // latitude = Geographische Breite = H�he
-        // longitude = Geographische L�nge = Breite
-
         x1 = Sketch.calculateLongitude(sketch, topLeft);
         x2 = Sketch.calculateLongitude(sketch, bottomRight);
 
@@ -97,19 +94,7 @@ public final class Circle extends SkyObject {
 
     @Override
     public boolean equals(Object obj) {
-        if (null == obj) {
-            return false;
-        }
-
-        if (this == obj) {
-            return true;
-        }
-
-        if (obj instanceof Circle) {
-            return ((Circle) obj).getPlace().equals(this.place);
-        }
-
-        return false;
+        return null != obj && (this == obj || obj instanceof Circle && ((Circle) obj).getPlace().equals(this.place));
     }
 
     @Override

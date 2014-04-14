@@ -18,7 +18,6 @@ public class MyPlace extends ExpiringEntity {
     }
 
     public String getId() {
-        // TODO Auto-generated method stub
         return this.id;
     }
 

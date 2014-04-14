@@ -54,76 +54,70 @@ public final class Sky implements Storage, Serializable {
             return false;
         }
 
-        boolean added = false;
         long id = status.getId();
-        MyStatus expiringStatus = this.statusStorage.get(id);
+        MyStatus myStatus = this.statusStorage.get(id);
 
-        if (expiringStatus == null) {
-            expiringStatus = new MyStatus(status);
+        if (myStatus != null) {
+            myStatus.focus();
 
-            if (status.getGeoLocation() != null) {
-                SkyObject point = new Point(expiringStatus);
-
-                this.points.addIfAbsent(point);
-                expiringStatus.addDrawable(point);
-
-                this.statusStorage.put(id, expiringStatus);
-
-                added = true;
-            }
-        } else {
-            expiringStatus.focus();
+            return false;
         }
 
-        this.checkReply(expiringStatus);
-        this.checkRetweet(expiringStatus);
+        myStatus = new MyStatus(status);
 
-        return added;
+        if (myStatus.getGeoLocation() == null) {
+            return false;
+        }
+
+        SkyObject point = new Point(myStatus);
+
+        this.points.addIfAbsent(point);
+        myStatus.addDrawable(point);
+
+        this.statusStorage.put(id, myStatus);
+
+        this.checkReply(myStatus);
+        this.checkRetweet(myStatus);
+
+        return true;
+
     }
 
-    private void checkReply(MyStatus expiringStatus) {
-        // TODO cleanup!
-        MyStatus status = expiringStatus;
-        List<MyStatus> replyList = this.replyStorage.remove(status.getId());
-
-        if (status.getGeoLocation() == null) {
-            return;
-        }
+    private void checkReply(MyStatus myStatus) {
+        List<MyStatus> replyList = this.replyStorage.remove(myStatus.getId());
 
         if (replyList != null) {
-            for (MyStatus expiringReply : replyList) {
-                MyStatus reply = expiringReply;
-                SkyObject line = new Line(reply, status);
+            for (MyStatus reply : replyList) {
+                SkyObject line = new Line(reply, myStatus);
 
                 this.lines.addIfAbsent(line);
 
-                expiringReply.addDrawable(line);
-                expiringStatus.addDrawable(line);
+                reply.addDrawable(line);
+                myStatus.addDrawable(line);
 
-                expiringReply.updateExpirationDate(status);
-                expiringStatus.updateExpirationDate(reply);
+                reply.addStatus(myStatus);
+                myStatus.addStatus(reply);
             }
         }
 
-        long repliedStatusId = status.getInReplyToStatusId();
+        long repliedStatusId = myStatus.getInReplyToStatusId();
 
         if (repliedStatusId == -1) {
             return;
         }
 
-        MyStatus expiringRepliedStatus = this.statusStorage.get(repliedStatusId);
+        MyStatus repliedStatus = this.statusStorage.get(repliedStatusId);
 
-        if (expiringRepliedStatus != null) {
-            MyStatus repliedStatus = expiringRepliedStatus;
-            SkyObject line = new Line(status, repliedStatus);
+        if (repliedStatus != null) {
+            SkyObject line = new Line(myStatus, repliedStatus);
 
             this.lines.addIfAbsent(line);
 
-            expiringStatus.addDrawable(line);
-            expiringRepliedStatus.addDrawable(line);
+            myStatus.addDrawable(line);
+            repliedStatus.addDrawable(line);
 
-            expiringStatus.updateExpirationDate(repliedStatus);
-            expiringRepliedStatus.updateExpirationDate(status);
+            myStatus.addStatus(repliedStatus);
+            repliedStatus.addStatus(myStatus);
 
             return;
         }
@@ -136,41 +130,33 @@ public final class Sky implements Storage, Serializable {
             this.replyStorage.put(repliedStatusId, replyList);
         }
 
-        replyList.add(expiringStatus);
+        replyList.add(myStatus);
     }
 
-    private void checkRetweet(MyStatus expiringStatus) {
-        MyStatus status = expiringStatus;
-        long statusId = status.getId();
+    private void checkRetweet(MyStatus myStatus) {
+        long statusId = myStatus.getId();
 
         // Check for tweets that are retweets of the given status
         List<MyStatus> retweetList = this.retweetStorage.remove(statusId);
 
-        if (status.getGeoLocation() == null) {
-            // No geolocation, so forget that status
-            return;
-        }
-
-
         // Is retweeted?
         if (retweetList != null) {
             // Yeah! We have a waiting list for this status. Draw the lines!
-            for (MyStatus expiringRetweet : retweetList) {
-                MyStatus retweet = expiringRetweet;
-                SkyObject line = new Line(retweet, status);
+            for (MyStatus retweet : retweetList) {
+                SkyObject line = new Line(retweet, myStatus);
 
                 this.lines.addIfAbsent(line);
 
-                expiringRetweet.addDrawable(line);
-                expiringStatus.addDrawable(line);
+                retweet.addDrawable(line);
+                myStatus.addDrawable(line);
 
-                expiringRetweet.updateExpirationDate(status);
-                expiringStatus.updateExpirationDate(retweet);
+                retweet.addStatus(myStatus);
+                myStatus.addStatus(retweet);
             }
         }
 
         // Is a retweet?
-        MyStatus retweetedStatus = status.getRetweetedStatus();
+        MyStatus retweetedStatus = myStatus.getRetweetedStatus();
 
         if (retweetedStatus == null) {
             // No retweeted status
@@ -178,20 +164,19 @@ public final class Sky implements Storage, Serializable {
         }
 
         long retweetedStatusId = retweetedStatus.getId();
-        MyStatus expiringRetweetedStatus = this.statusStorage.get(retweetedStatusId);
+        retweetedStatus = this.statusStorage.get(retweetedStatusId);
 
-        if (expiringRetweetedStatus != null) {
-            // Retweeted status allready in storage, so add line and dependencies
-            retweetedStatus = expiringRetweetedStatus;
-            SkyObject line = new Line(status, retweetedStatus);
+        if (retweetedStatus != null) {
+            // Retweeted status already in storage, so add line and dependencies
+            SkyObject line = new Line(myStatus, retweetedStatus);
 
             this.lines.addIfAbsent(line);
 
-            expiringStatus.addDrawable(line);
-            expiringRetweetedStatus.addDrawable(line);
+            myStatus.addDrawable(line);
+            retweetedStatus.addDrawable(line);
 
-            expiringStatus.updateExpirationDate(retweetedStatus);
-            expiringRetweetedStatus.updateExpirationDate(status);
+            myStatus.addStatus(retweetedStatus);
+            retweetedStatus.addStatus(myStatus);
 
             return;
         }
@@ -205,65 +190,104 @@ public final class Sky implements Storage, Serializable {
             this.replyStorage.put(retweetedStatusId, retweetList);
         }
 
-        retweetList.add(expiringStatus);
+        retweetList.add(myStatus);
     }
 
     @Override
     public boolean addUser(Status status, User user) {
+        MyStatus myStatus = this.statusStorage.get(status.getId());
+
+        if (myStatus == null) {
+            if (!this.addStatus(status)) {
+                return false;
+            }
+
+            myStatus = this.statusStorage.get(status.getId());
+        }
+
+        return this.addUser(myStatus, user);
+    }
+
+    public boolean addUser(MyStatus status, User user) {
         if (!user.isGeoEnabled()) {
             return false;
         }
 
         boolean added = false;
         long id = user.getId();
-        MyUser expiringUser = this.userStorage.get(id);
+        MyUser myUser = this.userStorage.get(id);
 
-        if (expiringUser == null) {
-            expiringUser = new MyUser(user);
+        if (myUser == null) {
+            myUser = new MyUser(user);
 
-            this.userStorage.put(id, expiringUser);
+            this.userStorage.put(id, myUser);
 
             added = true;
         } else {
-            expiringUser.focus();
+            myUser.focus();
         }
 
-        expiringUser.updateExpirationDate(status);
+        myUser.addStatus(status);
 
         return added;
     }
 
     @Override
     public boolean addPlace(Status status, Place place) {
-        boolean added = false;
-        String id = place.getId();
-        MyPlace expiringPlace = this.placeStorage.get(id);
+        MyStatus myStatus = this.statusStorage.get(status.getId());
 
-        if (expiringPlace == null) {
-            expiringPlace = new MyPlace(place);
-
-            if (place.getBoundingBoxCoordinates() != null) {
-                SkyObject circle = new Circle(expiringPlace);
-
-                this.circles.addIfAbsent(circle);
-                expiringPlace.addDrawable(circle);
+        if (myStatus == null) {
+            if (!this.addStatus(status)) {
+                return false;
             }
 
-            this.placeStorage.put(id, expiringPlace);
+            myStatus = this.statusStorage.get(status.getId());
+        }
+
+        return this.addPlace(myStatus, place);
+    }
+
+
+    public boolean addPlace(MyStatus status, Place place) {
+        boolean added = false;
+        String id = place.getId();
+        MyPlace myPlace = this.placeStorage.get(id);
+
+        if (myPlace == null) {
+            myPlace = new MyPlace(place);
+
+            if (place.getBoundingBoxCoordinates() != null) {
+                SkyObject circle = new Circle(myPlace);
+
+                this.circles.addIfAbsent(circle);
+                myPlace.addDrawable(circle);
+            }
+
+            this.placeStorage.put(id, myPlace);
 
             added = true;
         } else {
-            expiringPlace.focus();
+            myPlace.focus();
         }
 
-        expiringPlace.updateExpirationDate(status);
+        myPlace.addStatus(status);
 
         return added;
     }
 
     @Override
     public boolean addHashtag(Status status, HashtagEntity entity) {
-        return this.addHashtag(new MyStatus(status), entity);
+        MyStatus myStatus = this.statusStorage.get(status.getId());
+
+        if (myStatus == null) {
+            if (!this.addStatus(status)) {
+                return false;
+            }
+
+            myStatus = this.statusStorage.get(status.getId());
+        }
+
+        return this.addHashtag(myStatus, entity);
     }
 
     public boolean addHashtag(MyStatus status, HashtagEntity entity) {
@@ -273,19 +297,19 @@ public final class Sky implements Storage, Serializable {
 
         boolean added = false;
         String text = entity.getText();
-        MyHashtag expiringHashtag = this.hashtagStorage.get(text);
+        MyHashtag myHashtag = this.hashtagStorage.get(text);
 
-        if (expiringHashtag == null) {
-            expiringHashtag = new MyHashtag(entity);
+        if (myHashtag == null) {
+            myHashtag = new MyHashtag(entity);
 
-            this.hashtagStorage.put(text, expiringHashtag);
+            this.hashtagStorage.put(text, myHashtag);
 
             added = true;
         }
 
-        if (expiringHashtag.addStatus(status)) {
-            List<MyStatus> hashtaggedStatuses = expiringHashtag.getStatuses();
-            MyStatus expiringStatus = this.statusStorage.get(status.getId());
+        if (myHashtag.addStatus(status)) {
+            List<MyStatus> hashtaggedStatuses = myHashtag.getStatuses();
+            MyStatus myStatus = this.statusStorage.get(status.getId());
 
             if (hashtaggedStatuses.size() > 1) {
                 for (MyStatus hashtaggedStatus : hashtaggedStatuses) {
@@ -295,27 +319,25 @@ public final class Sky implements Storage, Serializable {
                         continue;
                     }
 
-                    MyStatus expiringHashtaggedStatus = this.statusStorage.get(hashtaggedStatusId);
+                    hashtaggedStatus = this.statusStorage.get(hashtaggedStatusId);
 
-                    if (expiringHashtaggedStatus != null) {
+                    if (hashtaggedStatus != null) {
                         Line line = new Line(status, hashtaggedStatus);
 
                         this.lines.addIfAbsent(line);
 
-                        expiringStatus.addDrawable(line);
-                        expiringHashtag.addDrawable(line);
-                        expiringHashtaggedStatus.addDrawable(line);
-
-                        //expiringHashtaggedStatus.updateExpirationDate(status);
+                        myStatus.addDrawable(line);
+                        myHashtag.addDrawable(line);
+                        hashtaggedStatus.addDrawable(line);
                     }
                 }
             }
         }
 
-        expiringHashtag.updateExpirationDate(status);
+        myHashtag.addStatus(status);
 
         if (!added) {
-            expiringHashtag.focus();
+            myHashtag.focus();
         }
 
         return added;
@@ -366,7 +388,7 @@ public final class Sky implements Storage, Serializable {
         }
 
         private V putWithoutCheck(K key, V value) {
-            CopyOnWriteArrayList<SkyObject> list = null;
+            CopyOnWriteArrayList<SkyObject> list;
 
             for (SkyObject drawable : value.getDrawables()) {
                 if (drawable instanceof Point) {
@@ -419,50 +441,50 @@ public final class Sky implements Storage, Serializable {
 
     public boolean addEntityContainer(ExpiringEntity entityContainer) {
         if (entityContainer instanceof MyStatus) {
-            MyStatus expiringStatus = (MyStatus) entityContainer;
-            long statusId = expiringStatus.getId();
+            MyStatus myStatus = (MyStatus) entityContainer;
+            long statusId = myStatus.getId();
 
             if (this.statusStorage.containsKey(statusId)) {
                 return false;
             }
 
-            this.statusStorage.putWithoutCheck(statusId, expiringStatus);
+            this.statusStorage.putWithoutCheck(statusId, myStatus);
             return true;
         }
 
         if (entityContainer instanceof MyUser) {
-            MyUser expiringUser = (MyUser) entityContainer;
-            long userId = expiringUser.getId();
+            MyUser myUser = (MyUser) entityContainer;
+            long userId = myUser.getId();
 
             if (this.userStorage.containsKey(userId)) {
                 return false;
             }
 
-            this.userStorage.putWithoutCheck(userId, expiringUser);
+            this.userStorage.putWithoutCheck(userId, myUser);
             return true;
         }
 
         if (entityContainer instanceof MyPlace) {
-            MyPlace expiringPlace = (MyPlace) entityContainer;
-            String placeId = expiringPlace.getId();
+            MyPlace myPlace = (MyPlace) entityContainer;
+            String placeId = myPlace.getId();
 
             if (this.placeStorage.containsKey(placeId)) {
                 return false;
             }
 
-            this.placeStorage.putWithoutCheck(placeId, expiringPlace);
+            this.placeStorage.putWithoutCheck(placeId, myPlace);
             return true;
         }
 
         if (entityContainer instanceof MyHashtag) {
-            MyHashtag expiringHashtag = (MyHashtag) entityContainer;
-            String text = expiringHashtag.getText();
+            MyHashtag myHashtag = (MyHashtag) entityContainer;
+            String text = myHashtag.getText();
 
             if (this.hashtagStorage.containsKey(text)) {
                 return false;
             }
 
-            this.hashtagStorage.putWithoutCheck(text, expiringHashtag);
+            this.hashtagStorage.putWithoutCheck(text, myHashtag);
             return true;
         }
 
