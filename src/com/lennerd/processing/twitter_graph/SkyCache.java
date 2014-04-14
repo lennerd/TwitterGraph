@@ -1,5 +1,7 @@
 package com.lennerd.processing.twitter_graph;
 
+import com.lennerd.processing.twitter_graph.twitter.ExpiringEntity;
+
 import java.io.*;
 
 public final class SkyCache extends Thread {
@@ -37,11 +39,11 @@ public final class SkyCache extends Thread {
                 Sky sky = new Sky(field, amount);
 
                 while (obj != null) {
-                    if (!(obj instanceof ExpiringEntityContainer)) {
+                    if (!(obj instanceof ExpiringEntity)) {
                         throw new InvalidClassException("Expected expiring EntityContainer, got \"" + obj.getClass() + "\"");
                     }
 
-                    sky.addEntityContainer((ExpiringEntityContainer) obj);
+                    sky.addEntityContainer((ExpiringEntity) obj);
                     obj = objectInputStream.readObject();
                 }
 
@@ -81,7 +83,7 @@ public final class SkyCache extends Thread {
         ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
 
         try {
-            for (ExpiringEntityContainer entityContainer : sky.getEntityContainers()) {
+            for (ExpiringEntity entityContainer : sky.getEntityContainers()) {
                 objectOutputStream.writeObject(entityContainer);
             }
             objectOutputStream.writeObject(null);

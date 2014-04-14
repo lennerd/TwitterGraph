@@ -1,7 +1,7 @@
 package com.lennerd.processing.twitter_graph.status_collector.request;
 
-import twitter4j.*;
 import com.lennerd.processing.twitter_graph.status_collector.DataCollector;
+import twitter4j.*;
 
 public class UserFollowersRequest extends AbstractRequest {
 

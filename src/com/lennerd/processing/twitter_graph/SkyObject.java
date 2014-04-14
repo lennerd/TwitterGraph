@@ -1,5 +1,6 @@
 package com.lennerd.processing.twitter_graph;
 
+import com.lennerd.processing.twitter_graph.twitter.MyStatus;
 import processing.core.PApplet;
 
 import java.io.Serializable;

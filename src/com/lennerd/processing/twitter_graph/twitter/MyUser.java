@@ -1,16 +1,14 @@
-package com.lennerd.processing.twitter_graph;
+package com.lennerd.processing.twitter_graph.twitter;
 
 import twitter4j.User;
 
-import java.io.Serializable;
-
-public final class MyUser implements Serializable {
-
-    private static final long serialVersionUID = Sketch.SERIALIZATION_ID;
+public class MyUser extends ExpiringEntity {
 
     private final long id;
 
     public MyUser(User user) {
+        super();
+
         this.id = user.getId();
     }
 

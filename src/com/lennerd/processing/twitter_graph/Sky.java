@@ -1,6 +1,7 @@
 package com.lennerd.processing.twitter_graph;
 
 import com.lennerd.processing.twitter_graph.status_collector.Storage;
+import com.lennerd.processing.twitter_graph.twitter.*;
 import twitter4j.HashtagEntity;
 import twitter4j.Place;
 import twitter4j.Status;
@@ -20,12 +21,12 @@ public final class Sky implements Storage, Serializable {
     private final int field, amount;
     private final CopyOnWriteArrayList<SkyObject> lines, points, circles;
     private final CopyOnWriteArrayList<SkyObject> removeDrawable;
-    private final ExpiringHashMap<Long, ExpiringStatus> statusStorage;
-    private final ExpiringHashMap<Long, ExpiringUser> userStorage;
-    private final ExpiringHashMap<String, ExpiringPlace> placeStorage;
-    private final ExpiringHashMap<String, ExpiringHashtag> hashtagStorage;
-    private final Map<Long, List<ExpiringStatus>> replyStorage;
-    private final Map<Long, List<ExpiringStatus>> retweetStorage;
+    private final ExpiringHashMap<Long, MyStatus> statusStorage;
+    private final ExpiringHashMap<Long, MyUser> userStorage;
+    private final ExpiringHashMap<String, MyPlace> placeStorage;
+    private final ExpiringHashMap<String, MyHashtag> hashtagStorage;
+    private final Map<Long, List<MyStatus>> replyStorage;
+    private final Map<Long, List<MyStatus>> retweetStorage;
 
     public Sky(int field, int amount) {
         this.field = field;
@@ -36,12 +37,12 @@ public final class Sky implements Storage, Serializable {
         this.circles = new CopyOnWriteArrayList<SkyObject>();
         this.removeDrawable = new CopyOnWriteArrayList<SkyObject>();
 
-        this.statusStorage = new ExpiringHashMap<Long, ExpiringStatus>(field, amount);
-        this.userStorage = new ExpiringHashMap<Long, ExpiringUser>(field, amount);
-        this.placeStorage = new ExpiringHashMap<String, ExpiringPlace>(field, amount);
-        this.hashtagStorage = new ExpiringHashMap<String, ExpiringHashtag>(field, amount);
-        this.replyStorage = new HashMap<Long, List<ExpiringStatus>>();
-        this.retweetStorage = new HashMap<Long, List<ExpiringStatus>>();
+        this.statusStorage = new ExpiringHashMap<Long, MyStatus>(field, amount);
+        this.userStorage = new ExpiringHashMap<Long, MyUser>(field, amount);
+        this.placeStorage = new ExpiringHashMap<String, MyPlace>(field, amount);
+        this.hashtagStorage = new ExpiringHashMap<String, MyHashtag>(field, amount);
+        this.replyStorage = new HashMap<Long, List<MyStatus>>();
+        this.retweetStorage = new HashMap<Long, List<MyStatus>>();
     }
 
     @Override
@@ -55,13 +56,13 @@ public final class Sky implements Storage, Serializable {
 
         boolean added = false;
         long id = status.getId();
-        ExpiringStatus expiringStatus = this.statusStorage.get(id);
+        MyStatus expiringStatus = this.statusStorage.get(id);
 
         if (expiringStatus == null) {
-            expiringStatus = new ExpiringStatus(status);
+            expiringStatus = new MyStatus(status);
 
             if (status.getGeoLocation() != null) {
-                SkyObject point = new Point(expiringStatus.getStatus());
+                SkyObject point = new Point(expiringStatus);
 
                 this.points.addIfAbsent(point);
                 expiringStatus.addDrawable(point);
@@ -80,19 +81,18 @@ public final class Sky implements Storage, Serializable {
         return added;
     }
 
-    private void checkReply(ExpiringStatus expiringStatus) {
+    private void checkReply(MyStatus expiringStatus) {
         // TODO cleanup!
-        MyStatus status = expiringStatus.getStatus();
-        long statusId = status.getId();
-        List<ExpiringStatus> replyList = this.replyStorage.remove(statusId);
+        MyStatus status = expiringStatus;
+        List<MyStatus> replyList = this.replyStorage.remove(status.getId());
 
         if (status.getGeoLocation() == null) {
             return;
         }
 
         if (replyList != null) {
-            for (ExpiringStatus expiringReply : replyList) {
-                MyStatus reply = expiringReply.getStatus();
+            for (MyStatus expiringReply : replyList) {
+                MyStatus reply = expiringReply;
                 SkyObject line = new Line(reply, status);
 
                 this.lines.addIfAbsent(line);
@@ -111,10 +111,10 @@ public final class Sky implements Storage, Serializable {
             return;
         }
 
-        ExpiringStatus expiringRepliedStatus = this.statusStorage.get(repliedStatusId);
+        MyStatus expiringRepliedStatus = this.statusStorage.get(repliedStatusId);
 
         if (expiringRepliedStatus != null) {
-            MyStatus repliedStatus = expiringRepliedStatus.getStatus();
+            MyStatus repliedStatus = expiringRepliedStatus;
             SkyObject line = new Line(status, repliedStatus);
 
             this.lines.addIfAbsent(line);
@@ -131,7 +131,7 @@ public final class Sky implements Storage, Serializable {
         replyList = this.replyStorage.get(repliedStatusId);
 
         if (replyList == null) {
-            replyList = new ArrayList<ExpiringStatus>();
+            replyList = new ArrayList<MyStatus>();
 
             this.replyStorage.put(repliedStatusId, replyList);
         }
@@ -139,12 +139,12 @@ public final class Sky implements Storage, Serializable {
         replyList.add(expiringStatus);
     }
 
-    private void checkRetweet(ExpiringStatus expiringStatus) {
-        MyStatus status = expiringStatus.getStatus();
+    private void checkRetweet(MyStatus expiringStatus) {
+        MyStatus status = expiringStatus;
         long statusId = status.getId();
 
         // Check for tweets that are retweets of the given status
-        List<ExpiringStatus> retweetList = this.retweetStorage.remove(statusId);
+        List<MyStatus> retweetList = this.retweetStorage.remove(statusId);
 
         if (status.getGeoLocation() == null) {
             // No geolocation, so forget that status
@@ -155,8 +155,8 @@ public final class Sky implements Storage, Serializable {
         // Is retweeted?
         if (retweetList != null) {
             // Yeah! We have a waiting list for this status. Draw the lines!
-            for (ExpiringStatus expiringRetweet : retweetList) {
-                MyStatus retweet = expiringRetweet.getStatus();
+            for (MyStatus expiringRetweet : retweetList) {
+                MyStatus retweet = expiringRetweet;
                 SkyObject line = new Line(retweet, status);
 
                 this.lines.addIfAbsent(line);
@@ -178,11 +178,11 @@ public final class Sky implements Storage, Serializable {
         }
 
         long retweetedStatusId = retweetedStatus.getId();
-        ExpiringStatus expiringRetweetedStatus = this.statusStorage.get(retweetedStatusId);
+        MyStatus expiringRetweetedStatus = this.statusStorage.get(retweetedStatusId);
 
         if (expiringRetweetedStatus != null) {
             // Retweeted status allready in storage, so add line and dependencies
-            retweetedStatus = expiringRetweetedStatus.getStatus();
+            retweetedStatus = expiringRetweetedStatus;
             SkyObject line = new Line(status, retweetedStatus);
 
             this.lines.addIfAbsent(line);
@@ -200,7 +200,7 @@ public final class Sky implements Storage, Serializable {
         retweetList = this.retweetStorage.get(retweetedStatusId);
 
         if (retweetList == null) {
-            retweetList = new ArrayList<ExpiringStatus>();
+            retweetList = new ArrayList<MyStatus>();
 
             this.replyStorage.put(retweetedStatusId, retweetList);
         }
@@ -216,10 +216,10 @@ public final class Sky implements Storage, Serializable {
 
         boolean added = false;
         long id = user.getId();
-        ExpiringUser expiringUser = this.userStorage.get(id);
+        MyUser expiringUser = this.userStorage.get(id);
 
         if (expiringUser == null) {
-            expiringUser = new ExpiringUser(user);
+            expiringUser = new MyUser(user);
 
             this.userStorage.put(id, expiringUser);
 
@@ -237,13 +237,13 @@ public final class Sky implements Storage, Serializable {
     public boolean addPlace(Status status, Place place) {
         boolean added = false;
         String id = place.getId();
-        ExpiringPlace expiringPlace = this.placeStorage.get(id);
+        MyPlace expiringPlace = this.placeStorage.get(id);
 
         if (expiringPlace == null) {
-            expiringPlace = new ExpiringPlace(place);
+            expiringPlace = new MyPlace(place);
 
             if (place.getBoundingBoxCoordinates() != null) {
-                SkyObject circle = new Circle(expiringPlace.getPlace());
+                SkyObject circle = new Circle(expiringPlace);
 
                 this.circles.addIfAbsent(circle);
                 expiringPlace.addDrawable(circle);
@@ -273,10 +273,10 @@ public final class Sky implements Storage, Serializable {
 
         boolean added = false;
         String text = entity.getText();
-        ExpiringHashtag expiringHashtag = this.hashtagStorage.get(text);
+        MyHashtag expiringHashtag = this.hashtagStorage.get(text);
 
         if (expiringHashtag == null) {
-            expiringHashtag = new ExpiringHashtag(entity);
+            expiringHashtag = new MyHashtag(entity);
 
             this.hashtagStorage.put(text, expiringHashtag);
 
@@ -285,7 +285,7 @@ public final class Sky implements Storage, Serializable {
 
         if (expiringHashtag.addStatus(status)) {
             List<MyStatus> hashtaggedStatuses = expiringHashtag.getStatuses();
-            ExpiringStatus expiringStatus = this.statusStorage.get(status.getId());
+            MyStatus expiringStatus = this.statusStorage.get(status.getId());
 
             if (hashtaggedStatuses.size() > 1) {
                 for (MyStatus hashtaggedStatus : hashtaggedStatuses) {
@@ -295,7 +295,7 @@ public final class Sky implements Storage, Serializable {
                         continue;
                     }
 
-                    ExpiringStatus expiringHashtaggedStatus = this.statusStorage.get(hashtaggedStatusId);
+                    MyStatus expiringHashtaggedStatus = this.statusStorage.get(hashtaggedStatusId);
 
                     if (expiringHashtaggedStatus != null) {
                         Line line = new Line(status, hashtaggedStatus);
@@ -345,7 +345,7 @@ public final class Sky implements Storage, Serializable {
         return drawables;
     }
 
-    private class ExpiringHashMap<K, V extends ExpiringEntityContainer> extends ConcurrentHashMap<K, V> {
+    private class ExpiringHashMap<K, V extends ExpiringEntity> extends ConcurrentHashMap<K, V> {
 
         private static final long serialVersionUID = 1L;
         private int field;
@@ -401,7 +401,7 @@ public final class Sky implements Storage, Serializable {
             Date limit = calendar.getTime();
 
             for (Map.Entry<K, V> entry : this.entrySet()) {
-                ExpiringEntityContainer expiringObject = entry.getValue();
+                ExpiringEntity expiringObject = entry.getValue();
 
                 if (expiringObject.isExpired(limit)) {
                     this.remove(entry.getKey());
@@ -417,10 +417,10 @@ public final class Sky implements Storage, Serializable {
 
     }
 
-    public boolean addEntityContainer(ExpiringEntityContainer entityContainer) {
-        if (entityContainer instanceof ExpiringStatus) {
-            ExpiringStatus expiringStatus = (ExpiringStatus) entityContainer;
-            long statusId = expiringStatus.getStatus().getId();
+    public boolean addEntityContainer(ExpiringEntity entityContainer) {
+        if (entityContainer instanceof MyStatus) {
+            MyStatus expiringStatus = (MyStatus) entityContainer;
+            long statusId = expiringStatus.getId();
 
             if (this.statusStorage.containsKey(statusId)) {
                 return false;
@@ -430,9 +430,9 @@ public final class Sky implements Storage, Serializable {
             return true;
         }
 
-        if (entityContainer instanceof ExpiringUser) {
-            ExpiringUser expiringUser = (ExpiringUser) entityContainer;
-            long userId = expiringUser.getUser().getId();
+        if (entityContainer instanceof MyUser) {
+            MyUser expiringUser = (MyUser) entityContainer;
+            long userId = expiringUser.getId();
 
             if (this.userStorage.containsKey(userId)) {
                 return false;
@@ -442,9 +442,9 @@ public final class Sky implements Storage, Serializable {
             return true;
         }
 
-        if (entityContainer instanceof ExpiringPlace) {
-            ExpiringPlace expiringPlace = (ExpiringPlace) entityContainer;
-            String placeId = expiringPlace.getPlace().getId();
+        if (entityContainer instanceof MyPlace) {
+            MyPlace expiringPlace = (MyPlace) entityContainer;
+            String placeId = expiringPlace.getId();
 
             if (this.placeStorage.containsKey(placeId)) {
                 return false;
@@ -454,9 +454,9 @@ public final class Sky implements Storage, Serializable {
             return true;
         }
 
-        if (entityContainer instanceof ExpiringHashtag) {
-            ExpiringHashtag expiringHashtag = (ExpiringHashtag) entityContainer;
-            String text = expiringHashtag.getHashtag().getText();
+        if (entityContainer instanceof MyHashtag) {
+            MyHashtag expiringHashtag = (MyHashtag) entityContainer;
+            String text = expiringHashtag.getText();
 
             if (this.hashtagStorage.containsKey(text)) {
                 return false;
@@ -469,8 +469,8 @@ public final class Sky implements Storage, Serializable {
         throw new IllegalArgumentException("Unkown entity type.");
     }
 
-    public ArrayList<ExpiringEntityContainer> getEntityContainers() {
-        ArrayList<ExpiringEntityContainer> entityContainers = new ArrayList<ExpiringEntityContainer>();
+    public ArrayList<ExpiringEntity> getEntityContainers() {
+        ArrayList<ExpiringEntity> entityContainers = new ArrayList<ExpiringEntity>();
 
         entityContainers.addAll(this.statusStorage.values());
         entityContainers.addAll(this.userStorage.values());

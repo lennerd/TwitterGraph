@@ -3,7 +3,10 @@ package com.lennerd.processing.twitter_graph.status_collector;
 import com.lennerd.processing.twitter_graph.status_collector.request.Request;
 import twitter4j.*;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Queue;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Request processor class.

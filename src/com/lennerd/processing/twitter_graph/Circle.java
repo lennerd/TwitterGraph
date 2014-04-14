@@ -1,5 +1,7 @@
 package com.lennerd.processing.twitter_graph;
 
+import com.lennerd.processing.twitter_graph.twitter.MyPlace;
+import com.lennerd.processing.twitter_graph.twitter.MyStatus;
 import de.looksgood.ani.Ani;
 import de.looksgood.ani.AniSequence;
 import processing.core.PApplet;

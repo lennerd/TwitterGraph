@@ -1,9 +1,9 @@
 package com.lennerd.processing.twitter_graph.status_collector.request;
 
+import com.lennerd.processing.twitter_graph.status_collector.DataCollector;
 import twitter4j.Status;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
-import com.lennerd.processing.twitter_graph.status_collector.DataCollector;
 
 public class RepliedStatusRequest extends AbstractRequest {
 

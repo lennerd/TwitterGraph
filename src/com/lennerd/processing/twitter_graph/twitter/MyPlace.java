@@ -1,19 +1,17 @@
-package com.lennerd.processing.twitter_graph;
+package com.lennerd.processing.twitter_graph.twitter;
 
 import twitter4j.GeoLocation;
 import twitter4j.Place;
 
-import java.io.Serializable;
-
-public final class MyPlace implements Serializable {
-
-    private static final long serialVersionUID = Sketch.SERIALIZATION_ID;
+public class MyPlace extends ExpiringEntity {
 
     private final String id;
     private final GeoLocation[][] boundingBoxCoordinates;
     private final String name;
 
     public MyPlace(Place place) {
+        super();
+
         this.id = place.getId();
         this.boundingBoxCoordinates = place.getBoundingBoxCoordinates();
         this.name = place.getName();
