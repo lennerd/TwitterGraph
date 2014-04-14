@@ -4,18 +4,20 @@ import com.lennerd.processing.twitter_graph.twitter.MyStatus;
 import de.looksgood.ani.Ani;
 import de.looksgood.ani.AniSequence;
 import processing.core.PApplet;
+import processing.core.PGraphics;
 import processing.core.PVector;
 import twitter4j.GeoLocation;
 
 import java.io.Serializable;
 
-public final class Line extends SkyObject {
+public class Line extends SkyObject {
 
     private static final long serialVersionUID = Sketch.SERIALIZATION_ID;
 
     private final MyStatus reply, status;
     private final String info;
     private float x1, x2, y1, y2;
+    private int width, height;
     private float opacity;
     private Focus focus;
     private float radius;
@@ -28,27 +30,21 @@ public final class Line extends SkyObject {
     }
 
     @Override
-    public void onDraw(PApplet sketch) {
-        sketch.pushMatrix();
-        sketch.pushStyle();
-
-        sketch.noFill();
-        sketch.stroke(this.color.red, this.color.green, this.color.blue,
+    public void drawGraphics(PGraphics graphics) {
+        graphics.noFill();
+        graphics.stroke(this.color.red, this.color.green, this.color.blue,
                 this.opacity);
 
-        sketch.line(this.x1, this.y1, this.x2, this.y2);
+        graphics.line(this.x1, this.y1, this.x2, this.y2);
 
-        sketch.ellipseMode(PApplet.RADIUS);
+        graphics.ellipseMode(PApplet.RADIUS);
 
         if (this.focus != null) {
-            sketch.noStroke();
-            sketch.fill(this.focus.color.red, this.focus.color.green,
+            graphics.noStroke();
+            graphics.fill(this.focus.color.red, this.focus.color.green,
                     this.focus.color.blue, this.focus.opacity);
-            sketch.ellipse(this.focus.x, this.focus.y, this.radius, this.radius);
+            graphics.ellipse(this.focus.x, this.focus.y, this.radius, this.radius);
         }
-
-        sketch.popMatrix();
-        sketch.popStyle();
     }
 
     public MyStatus getReply() {
@@ -74,11 +70,13 @@ public final class Line extends SkyObject {
 
         this.radius = 1.5f;
 
+        this.width = PApplet.ceil(Sketch.calculateLongitude(sketch, replyLocation));
+        this.height = PApplet.ceil(Sketch.calculateLatitude(sketch, replyLocation));
+
         Ani.to(this,
                 Sketch.ANI_DURATION,
-                "x2:" + Sketch.calculateLongitude(sketch, replyLocation)
-                        + ",y2:"
-                        + Sketch.calculateLatitude(sketch, replyLocation)
+                "x2:" + this.width +
+                ",y2:" + this.height
         );
     }
 
@@ -103,6 +101,30 @@ public final class Line extends SkyObject {
         sequence.endSequence();
 
         sequence.start();
+    }
+
+    @Override
+    public float getSketchX() {
+        return this.x1;
+    }
+
+    @Override
+    public float getSketchY() {
+        return this.y2;
+    }
+
+    @Override
+    public int getWidth() {
+        return this.width;
+    }
+
+    @Override
+    public int getHeight() {
+        return this.height;
+    }
+
+    public int getImageMode() {
+        return PApplet.CORNERS;
     }
 
     public void removePoint() {
@@ -187,32 +209,6 @@ public final class Line extends SkyObject {
         projection = PVector.add(lineStart, PVector.mult(temp, t));
 
         return mouse.dist(projection) <= InfoBox.MOUSE_OVER_BORDER;
-
-		/*
-         * this.projection = null;
-		 * 
-		 * lineStart = new PVector(this.x1, this.y1); lineEnd = new
-		 * PVector(this.x2, this.y2); mouse = new PVector(mouseX, mouseY);
-		 * 
-		 * float lineLength = lineStart.dist(lineEnd);
-		 * 
-		 * if (lineLength == 0F) { return mouse.dist(lineStart) <
-		 * InfoBox.MOUSE_OVER_BORDER; }
-		 * 
-		 * float t = PVector.dot(PVector.sub(mouse, lineStart),
-		 * PVector.sub(lineEnd, lineStart)) / lineLength;
-		 * 
-		 * if (t < 0F) { PApplet.println("lineStart"); return
-		 * mouse.dist(lineStart) < InfoBox.MOUSE_OVER_BORDER; }
-		 * 
-		 * if (t > lineLength) { PApplet.println("lineEnd"); return
-		 * mouse.dist(lineEnd) < InfoBox.MOUSE_OVER_BORDER; }
-		 * 
-		 * this.projection = PVector.add(lineStart,
-		 * PVector.mult(PVector.sub(lineEnd, lineStart), t));
-		 * 
-		 * return mouse.dist(this.projection) < InfoBox.MOUSE_OVER_BORDER;
-		 */
     }
 
     @Override

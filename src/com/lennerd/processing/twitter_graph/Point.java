@@ -4,9 +4,10 @@ import com.lennerd.processing.twitter_graph.twitter.MyStatus;
 import de.looksgood.ani.Ani;
 import de.looksgood.ani.AniSequence;
 import processing.core.PApplet;
+import processing.core.PGraphics;
 import twitter4j.GeoLocation;
 
-public final class Point extends SkyObject {
+public class Point extends SkyObject {
 
     private static final long serialVersionUID = Sketch.SERIALIZATION_ID;
 
@@ -15,6 +16,7 @@ public final class Point extends SkyObject {
     private float x, y;
     private float opacity = 0;
     private float radius;
+    private int size;
 
     public Point(MyStatus status) {
         this.status = status;
@@ -26,18 +28,12 @@ public final class Point extends SkyObject {
     }
 
     @Override
-    public void onDraw(PApplet sketch) {
-        sketch.pushMatrix();
-        sketch.pushStyle();
+    public void drawGraphics(PGraphics graphics) {
+        graphics.noStroke();
+        graphics.fill(this.color.red, this.color.green, this.color.blue, this.opacity);
 
-        sketch.noStroke();
-        sketch.fill(this.color.red, this.color.green, this.color.blue, this.opacity);
-
-        sketch.ellipseMode(PApplet.RADIUS);
-        sketch.ellipse(this.x, this.y, this.radius, this.radius);
-
-        sketch.popMatrix();
-        sketch.popStyle();
+        graphics.ellipseMode(PApplet.RADIUS);
+        graphics.ellipse(this.radius, this.radius, this.radius, this.radius);
     }
 
     @Override
@@ -49,6 +45,7 @@ public final class Point extends SkyObject {
 
         this.color = new StatusColor(this.status);
         this.radius = 1.5F;
+        this.size = PApplet.ceil(this.radius * 2);
 
         Ani.to(this, Sketch.ANI_DURATION, "opacity", 255);
     }
@@ -68,6 +65,26 @@ public final class Point extends SkyObject {
         sequence.endSequence();
 
         sequence.start();
+    }
+
+    @Override
+    public float getSketchX() {
+        return this.x;
+    }
+
+    @Override
+    public float getSketchY() {
+        return this.y;
+    }
+
+    @Override
+    public int getWidth() {
+        return this.size;
+    }
+
+    @Override
+    public int getHeight() {
+        return this.size;
     }
 
     @Override

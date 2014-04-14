@@ -33,7 +33,7 @@ public class Sketch extends PApplet {
     private Configuration configuration;
 
     public void setup() {
-        this.size(this.displayWidth, this.displayHeight);
+        this.size(800, 600);//this.displayWidth, this.displayHeight);
         this.background(Sketch.BACKGROUND_COLOR);
         this.frameRate(40);
 
@@ -194,7 +194,7 @@ public class Sketch extends PApplet {
 
         sketch.setConfiguration(cb.build());
 
-        String[] leftOverArgs = new String[] { "--full-screen", line.getOptionValue("name", Sketch.class.getName()) };
+        String[] leftOverArgs = new String[] { /*"--full-screen",*/ line.getOptionValue("name", Sketch.class.getName()) };
         PApplet.concat(leftOverArgs, line.getArgs());
 
         PApplet.runSketch(leftOverArgs, sketch);

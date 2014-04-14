@@ -5,15 +5,17 @@ import com.lennerd.processing.twitter_graph.twitter.MyStatus;
 import de.looksgood.ani.Ani;
 import de.looksgood.ani.AniSequence;
 import processing.core.PApplet;
+import processing.core.PGraphics;
 import twitter4j.GeoLocation;
 
-public final class Circle extends SkyObject {
+public class Circle extends SkyObject {
 
     private static final long serialVersionUID = Sketch.SERIALIZATION_ID;
 
     private final MyPlace place;
     private final String info;
-    private float x, y;
+    private float x, y, ellipseX, ellipseY;
+    private int size;
     private float radius = 0;
     private float opacity;
     private StatusColor newColor;
@@ -24,10 +26,7 @@ public final class Circle extends SkyObject {
     }
 
     @Override
-    public void onDraw(PApplet sketch) {
-        sketch.pushMatrix();
-        sketch.pushStyle();
-
+    public void drawGraphics(PGraphics graphics) {
         if (this.newColor != null) {
             Ani.to(this.color, Sketch.ANI_DURATION, "red", this.newColor.red);
             Ani.to(this.color, Sketch.ANI_DURATION, "green", this.newColor.green);
@@ -36,14 +35,11 @@ public final class Circle extends SkyObject {
             this.newColor = null;
         }
 
-        sketch.noStroke();
-        sketch.fill(this.color.red, this.color.green, this.color.blue, this.opacity);
+        graphics.noStroke();
+        graphics.fill(this.color.red, this.color.green, this.color.blue, this.opacity);
 
-        sketch.ellipseMode(PApplet.RADIUS);
-        sketch.ellipse(this.x, this.y, this.radius, this.radius);
-
-        sketch.popMatrix();
-        sketch.popStyle();
+        graphics.ellipseMode(PApplet.RADIUS);
+        graphics.ellipse(this.ellipseX, this.ellipseY, this.radius, this.radius);
     }
 
     @Override
@@ -63,12 +59,15 @@ public final class Circle extends SkyObject {
         b = y2 - y1;
 
         this.opacity = 30F;
-        //this.color = new StatusColor(0x000000);
+        float radius = PApplet.sqrt(PApplet.pow(a, 2) + PApplet.pow(b, 2)) / 2F;
 
-        Ani.to(this, Sketch.ANI_DURATION, "radius", PApplet.sqrt(PApplet.pow(a, 2) + PApplet.pow(b, 2)) / 2);
+        Ani.to(this, Sketch.ANI_DURATION, "radius", radius);
 
-        this.x = x1 + a / 2;
-        this.y = y1 + b / 2;
+        this.x = x1;
+        this.y = y1;
+        this.ellipseX = radius;
+        this.ellipseY = radius;
+        this.size = PApplet.ceil(radius * 2);
     }
 
     @Override
@@ -86,6 +85,26 @@ public final class Circle extends SkyObject {
         sequence.endSequence();
 
         sequence.start();
+    }
+
+    @Override
+    public float getSketchX() {
+        return this.x;
+    }
+
+    @Override
+    public float getSketchY() {
+        return this.y;
+    }
+
+    @Override
+    public int getWidth() {
+        return this.size;
+    }
+
+    @Override
+    public int getHeight() {
+        return this.size;
     }
 
     public MyPlace getPlace() {
@@ -110,7 +129,7 @@ public final class Circle extends SkyObject {
 
     @Override
     public boolean isMouseOver(int mouseX, int mouseY) {
-        return PApplet.dist(this.x, this.y, mouseX, mouseY) <= (this.radius + InfoBox.MOUSE_OVER_BORDER);
+        return PApplet.dist(this.ellipseX, this.ellipseY, mouseX, mouseY) <= (this.radius + InfoBox.MOUSE_OVER_BORDER);
     }
 
     @Override
