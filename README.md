@@ -3,7 +3,7 @@ TwitterGraph
 
 ## Idea
 
-TwitterGraph is a Twitter data visualiziation built with Processing. It simple approach is to visualize geolocalized
+TwitterGraph is a Twitter data visualiziation built with [Processing](http://www.processing.org/). It simple approach is to visualize geolocalized
 data from the TwitterAPI. The result is a imaginary map with points, circles and lines.
 
 ![TwitterGraph](https://incom.org/action/open-image/118434/big/118434.png)
